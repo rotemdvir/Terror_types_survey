@@ -1,0 +1,92 @@
+---
+title: "Terror Types Manuscript II"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Dropbox/TAMU/Extra_Projects/Git_edits/Terror_types")
+
+library(devtools)
+library(stargazer)
+library(tidyr)
+library(dplyr)
+```
+
+## Regression Tables
+
+This document displays the results of two analyses. First, two models that test what factors drive the reported **Concern** attribute. These are OLS regression models with the **Likelihood** and **Costs** attributes as the main predictors. Full discussion of this analysis is detailed in the manuscript appendix.
+
+```{r data insert, echo = F }
+# load data
+Data_type2 <- read.csv("~/Dropbox/TAMU/Extra_Projects/Git_edits/Terror_types/Data/TerrorTypes_EditNov19.csv", 
+                       header=TRUE, sep = ",", strip.white = T, na.strings = "")
+
+# Rescale policy items (0-1 scale)
+Data_type2$newforce <- ((Data_type2$Pol_force - 1)/3)
+Data_type2$newscreen <- ((Data_type2$Pol_screenUS - 1)/4)
+Data_type2$surv <- ((Data_type2$Pol_survMusl - 1)/3)
+Data_type2$phone <- ((Data_type2$Pol_trackPh - 1)/4)
+
+# Rescale attributes (0-1 scale)
+Data_type2$conc_bomb <- ((Data_type2$concern_bomb - 1)/3)
+Data_type2$conc_cyber <- ((Data_type2$concern_cyber - 1)/3)
+
+Data_type2$like_bomb <- ((Data_type2$likely_bomb - 1)/3)
+Data_type2$like_cyber <- ((Data_type2$likely_cyber - 1)/3)
+
+Data_type2$ca_bomb <- ((Data_type2$cas_bomb - 1)/4)
+Data_type2$ca_cyber <- ((Data_type2$cas_cyber - 1)/4)
+
+## Add knowledge Index (based on media items)
+Data_type2$media_index <- Data_type2$inform_papers + Data_type2$inform_Fox + Data_type2$inform_CNN + Data_type2$inform_MSNBC +
+  Data_type2$inform_network + Data_type2$inform_online + Data_type2$inform_radio + Data_type2$inform_social
+
+#change variables names
+names(Data_type2)[names(Data_type2)=="KnowGen"] <- "Knowledge"
+names(Data_type2)[names(Data_type2)=="DOV_XPARTY7"] <- "Party"
+names(Data_type2)[names(Data_type2)=="PPAGE"] <- "Age"
+names(Data_type2)[names(Data_type2)=="PPGENDER"] <- "Gender"
+
+```
+
+
+```{r results = 'asis', message=F, echo=FALSE }
+
+m.concern1 <- lm(conc_bomb ~ like_bomb + ca_bomb + media_index + Party + Age + PPEDUCAT +
+                    Gender + PPINCIMP, data = Data_type2)
+
+m.concern2 <- lm(conc_cyber ~ like_cyber + ca_cyber  + media_index + Party + Age + PPEDUCAT +
+                    Gender + PPINCIMP, data = Data_type2)
+
+# Regression table 
+stargazer(m.concern1, m.concern2, type = "latex", header = FALSE, 
+          style = "ajps", title = "Drivers of Concern Attribute", 
+          dep.var.labels = c("Concern:Conventional", "Concern:Cyber"),
+          covariate.labels = c("Likelihood:Conventional", "Costs:Conventional", "Likelihood:Cyber", "Costs:Cyber",
+                               "Media Index", "Partisanship", "Age", "Education", "Gender", "Income"),
+          omit.stat = c("LL","ser","f"), no.space = TRUE) #Latex table
+
+```
+
+\break
+
+The second analysis assess the effects of the primary **Likelihood** and **Costs** attributes on two policy options: offensive (military intervention) and defensive (airport security). These are two OLS regression models with the **Likelihood** and **Costs** attributes (by method of attack) as the central predictors. In the main text, the results are displayed using a combined coeficient plots.
+
+```{r results = 'asis', message=F, echo=FALSE}
+m.force1 <- lm(newforce ~ like_bomb + ca_bomb + like_cyber + ca_cyber + media_index + Party + Age + PPEDUCAT +
+                         Gender + PPINCIMP, data = Data_type2)
+
+m.screen1 <- lm(newscreen ~ like_bomb + ca_bomb + like_cyber + ca_cyber + media_index + Party + Age + PPEDUCAT +
+                          Gender + PPINCIMP, data = Data_type2)
+
+# Regression table 
+stargazer(m.force1, m.screen1, type = "latex", header = FALSE, 
+          style = "ajps", title = "Counterterrorism Policy Support", 
+          dep.var.labels = c("Offensive (Military Force)", "Defensive (Airport Security)"),
+          covariate.labels = c("Likelihood:Conventional", "Costs:Conventional", "Likelihood:Cyber", "Costs:Cyber",
+                               "Media Index", "Partisanship", "Age", "Education", "Gender", "Income"),
+          omit.stat = c("LL","ser","f"), no.space = TRUE) 
+
+```
+

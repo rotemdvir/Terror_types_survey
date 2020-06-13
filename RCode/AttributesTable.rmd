@@ -1,0 +1,79 @@
+---
+title: "Terror Types Manuscript"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Dropbox/TAMU/Extra_Projects/Git_edits/Terror_types")
+
+library(devtools)
+library(stargazer)
+library(RCurl)
+```
+
+## Regression Table
+
+This document displays the results of two regression models used in the paper. I run two OLS regression models with clustered satbdard errors (at the respondent level). In the main text, I present coefficient plots (avaliable in the figures folder). 
+
+```{r data insert, echo = F }
+
+##  Load data file  ##
+Data_type <- read.csv("~/Dropbox/TAMU/Extra_Projects/Git_edits/Terror_types/Data/TerrorTypes_EditNov19.csv", 
+                      header=TRUE, sep = ",", strip.white = T, na.strings = "")
+
+
+## Reshape Data to long: 2 Terror Types  ##
+data_long <- reshape(Data_type, varying = c(2:15), direction = "long", idvar = "CaseID", sep = "_", timevar = "order")
+data_long <- 
+  data_long[order(data_long$CaseID),] #order data by CaseID
+
+names(data_long) <- c("CaseID", "Partisanship", "Ideology", "Religion", "Age", "Age_group",
+                      "Education", "Race", "Gender", "Income", "Region_4", "Region_9", "Internet", "Informed_Terror", 
+                      "Econ_Roots", "Mus_Surv", "Force", "ScreenUS", "ScreenForg", "No_Immig", "No_Refugee", "Track_Phones",
+                      "Issue_econ", "Issue_immig", "Issue_debt", "Issue_energy", "Issue_health", "Issue_climate", "Issue_terror",
+                      "Issue_envi", "Issue_ineq", "Issue_women", "Inform_papers", "Inform_Fox", "Inform_CNN", "Inform_MSNBC",
+                      "Inform_network", "Inform_online", "Inform_radio", "Inform_social",
+                      "Fear_Terror", "Fear_Self", "Fear_Fam", "Fear_friend",
+                      "Terror_Type", "Concern", "Severity", "PublicKnow", "ExpertKnow", "Casualties", "Likelihood", 
+                      "Risk")  #rename vars in new data
+
+##  Add binary variable for each terror type  
+data_long$type_binary <- ifelse(data_long$Terror_Type == "bomb", 0, 1)
+
+# Rescale terror atatributes  (0-1 scale): since attributes are measued on different scales
+data_long$Likelihood2 <- ((data_long$Likelihood - 1)/3)
+data_long$Casualties2 <- ((data_long$Casualties - 1)/4)
+data_long$Concern2 <- ((data_long$Concern - 1)/3)
+
+## Add knowledge Index (based on media items)
+data_long$media_index <- data_long$Inform_papers + data_long$Inform_Fox + data_long$Inform_CNN + data_long$Inform_MSNBC +
+  data_long$Inform_network + data_long$Inform_online + data_long$Inform_radio + data_long$Inform_social
+```
+
+
+```{r results = 'asis', message=F, echo=FALSE, }
+url_robust <- "https://raw.githubusercontent.com/IsidoreBeautrelet/economictheoryblog/master/robust_summary.R"
+eval(parse(text = getURL(url_robust, ssl.verifypeer = FALSE)),
+     envir=.GlobalEnv)
+
+# Model 1: Likelihood  
+m.like <- lm(Likelihood2 ~ type_binary + media_index + Partisanship +
+                       Age + Education + Gender + Income, data = data_long)
+m.likeprint <- summary(m.like, cluster = c("CaseID"))
+
+# Model 2: Casualties (costs)  
+m.cas <- lm(Casualties2 ~ type_binary + media_index + Partisanship +
+                      Age + Education + Gender + Income, data = data_long)
+m.casprint <- summary(m.cas, cluster = c("CaseID"))
+
+# Regression table 
+stargazer(m.like, m.cas, type = "latex", header = FALSE, 
+          style = "ajps", title = "Regression Results", 
+          dep.var.labels = c("Likelihood", "Costs (Casualties)"),
+          covariate.labels = c("Method: Cyber", "Media Index",
+                               "Partisanship", "Age", "Education", "Gender", "Income"),
+          omit.stat = c("LL","ser","f"), no.space = TRUE) #Latex table
+
+```
+
