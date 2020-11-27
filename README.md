@@ -1,5 +1,5 @@
 # Terror_types_survey
-Data files and figures of the analyses conducted in the manuscript: "Unpacking public perceptions of terrorism: Does type of attack matters?" (2020)    
+Data files and figures of the analyses conducted in the manuscript: "Unpacking public perceptions of terrorism: Does type of attack matters?" *Studies in Conflict & Terrorism*, (2020).    
 
 The study focuses on the structure of survey questions and it may reflect public perceptions of terrorism threats.  
 
